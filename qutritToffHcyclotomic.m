@@ -14,31 +14,45 @@ X = init_X();
 H = init_H();
 CCX = init_CCX();
 
-ZCXupsidedown = init_ZCX(true);
-CXupsidedown = multAll(arrayfun(@(j) kron(I,X^j) * ZCXupsidedown^j * kron(I,X^(d-1)^j), 1:d-1, 'UniformOutput', false));
-swap = kron(I,H^2)*CX * kron(H^2,I)*CXupsidedown * kron(I,H^2)*CX;
-
-P3 = swap*ZCX*swap * ZCX * swap*ZCX^(d-1)*swap * ZCX^(d-1);
-Z_OCX01 = P3*swap*CX*swap*P3*swap*CX^(d-1)*swap;
-X01 = kron(k0',I)*Z_OCX01*kron(k0,I);
-ZCX01 = kron(X,X01) * (Z_OCX01* kron(X^2,I))^((d-1)/2);
-CX01 = kron(X,I) * (ZCX01*kron(X^2,I))^((d-1)/2);
-ZZCX01 = kron(I,CX01) * kron(ZCX,I) * kron(I,CX01) * kron(ZCX^(d-1),I) * kron(swap,I)*kron(I,ZCX01)*kron(swap,I);
-ZZCX = (ZZCX01 * kron(II,X))^(d-1) * kron(II,X);
-
-Q0 = kron(I,k0'*X^(d-1)*H) * ZCX * kron(I,H^3*X*k0);
-
-%if d = 3
-    ZZCw = (kron(II,H^3)*ZZCX*kron(II,H) * kron(II,X^(d-1) * X01 * X))^2;
-    %ZZCwdag = (kron(II,H)*ZZCX*kron(II,H^3) * kron(II,X^(d-1) * X01 * X))^2;
-    ZCS = removeBorrowedAncilla(kron(kron(I,X^(d-1)),I) * ZZCw * kron(kron(I,X),I),1);
-    TCiHdag = kron(X^(d-1),H^2) * ZCS * kron(I,H^2) * ZCS * kron(I,H^3) * ZCS * kron(I,H^2) * ZCS * kron(I,H) * ZCS * kron(I,H^2) * ZCS * kron(X,I);
-    %TCminusiH = kron(X^(d-1),H^2) * ZCS^2 * kron(I,H^2) * ZCS^2 * kron(I,H^3) * ZCS^2 * kron(I,H^2) * ZCS^2 * kron(I,H) * ZCS^2 * kron(I,H^2) * ZCS^2 * kron(X,I);
-    RtensI = TCiHdag^2 * kron(X^(d-1),X)*ZCX01*kron(X,X^(d-1));
-    R = removeBorrowedAncilla(RtensI,1);
-%end
-
+% testU(X);
+% disp(H);
+% testU(CCX);
+% testU(Xdag());
+% disp(Hdag());
+% testU(H2m());
+% testU(CX());
+% testU(CXdag());
+% testU(Swapm());
+% 
+% % The constructions from here on are specific to d = 3. For d > 3 it's
+% % easier to use the gate set {X, H, ZCX} instead of {X, H, CCX}.
+% testU(ZCX());
+% testU(ZCXdag());
+% testU(X00_01());
+% testU(X000_001());
+% testU(S());
+testU(w22());
 1;
+
+% P3 = swap*ZCX*swap * ZCX * swap*ZCX^(d-1)*swap * ZCX^(d-1);
+% Z_OCX01 = P3*swap*CX*swap*P3*swap*CX^(d-1)*swap;
+% X01 = kron(k0',I)*Z_OCX01*kron(k0,I);
+% ZCX01 = kron(X,X01) * (Z_OCX01* kron(X^2,I))^((d-1)/2);
+% CX01 = kron(X,I) * (ZCX01*kron(X^2,I))^((d-1)/2);
+% ZZCX01 = kron(I,CX01) * kron(ZCX,I) * kron(I,CX01) * kron(ZCX^(d-1),I) * kron(swap,I)*kron(I,ZCX01)*kron(swap,I);
+% ZZCX = (ZZCX01 * kron(II,X))^(d-1) * kron(II,X);
+% 
+% Q0 = kron(I,k0'*X^(d-1)*H) * ZCX * kron(I,H^3*X*k0);
+
+% %if d = 3
+%     ZZCw = (kron(II,H^3)*ZZCX*kron(II,H) * kron(II,X^(d-1) * X01 * X))^2;
+%     %ZZCwdag = (kron(II,H)*ZZCX*kron(II,H^3) * kron(II,X^(d-1) * X01 * X))^2;
+%     ZCS = removeBorrowedAncilla(kron(kron(I,X^(d-1)),I) * ZZCw * kron(kron(I,X),I),1);
+%     TCiHdag = kron(X^(d-1),H^2) * ZCS * kron(I,H^2) * ZCS * kron(I,H^3) * ZCS * kron(I,H^2) * ZCS * kron(I,H) * ZCS * kron(I,H^2) * ZCS * kron(X,I);
+%     %TCminusiH = kron(X^(d-1),H^2) * ZCS^2 * kron(I,H^2) * ZCS^2 * kron(I,H^3) * ZCS^2 * kron(I,H^2) * ZCS^2 * kron(I,H) * ZCS^2 * kron(I,H^2) * ZCS^2 * kron(X,I);
+%     RtensI = TCiHdag^2 * kron(X^(d-1),X)*ZCX01*kron(X,X^(d-1));
+%     R = removeBorrowedAncilla(RtensI,1);
+% %end
 
 function X = init_X()
     global I;
@@ -60,20 +74,27 @@ function CCX = init_CCX()
     CCX = blkdiag(CCX{:});
 end
 
-function Hdag = Hdag()
-    global d H;
-    Hdag = H^(4*d-1); % This is for exact global phase. Up to a global phase, H^3 suffices
+function Xdag = Xdag()
+    global d X;
+    Xdag = X^(d-1);
 end
 
-function H2m = H2m() % H^2 but with a global phase of -1. If the global phase were 1, sends x mod d to -x mod d.
+% H^\dagger with exact global phase. Is H^3 up to a global phase.
+function Hdag = Hdag()
+    global d H;
+    Hdag = H^(4*d-1);
+end
+
+% Sends |x> to -|-x mod d>. Is H^2 up to a global phase.
+function H2m = H2m()
     global d H;
     H2m = H^(2*d);
 end
 
 function CX = CX()
     global d II X H CCX;
-    CX = (kron(X * H2m() * X^(d-1), II) * CCX^((d+1)/2))^2;
-    CX = removeBorrowedAncilla(CX,3);
+    CX = (kron(X * H2m() * Xdag(), II) * CCX^((d+1)/2))^2;
+    CX = removeBorrowedAncilla(CX,1);
 end
 
 function CXdag = CXdag()
@@ -81,29 +102,63 @@ function CXdag = CXdag()
     CXdag = CX()^(d-1);
 end
 
+% Swap gate, with a global phase of -1.
+function Swapm = Swapm()
+    global I H;
+    CXupsidedown = reIndex(CX(), [2 1]);
+    Swapm = kron(I,H^2)*CX * kron(H^2,I)*CXupsidedown * kron(I,H^2)*CX;
+end
+
+% |0>-controlled X gate: Does on target X if control is |0>, else does I.
 function ZCX = ZCX()
     global d I X H CCX;
-    ZCX = kron(kron(I,Hdag()^2),I) * CCX * kron(kron(I,H^2),I) * kron(CXdag(),I) * CCX * kron(CX(),I);
-    ZCX = removeBorrowedAncilla(ZCX,2);
-    ZCX = kron(I,X) * ZCX^(d-1);
+    nZCX = kron(kron(I,Hdag()^2),I) * CCX * kron(kron(I,H^2),I) * kron( ...
+        CXdag(),I) * CCX * kron(CX(),I); % |not 0>-controlled X
+    nZCX = removeBorrowedAncilla(nZCX,2);
+    ZCX = kron(I,X) * nZCX^(d-1);
 end
 
-function V = removeBorrowedAncilla(U,b) % U is the unitary, and b is the index of the borrowed ancilla
-    global d I;
-    idxs = arrayfun(@(k) k+1:k+d^(b-1), 0:d^b:size(U,2)-1, 'UniformOutput', false);
-    V = U([idxs{:}],[idxs{:}]);
-    Uv = arrayfun(@(x,y) U([idxs{:}]+x*d^(b-1),[idxs{:}]+y*d^(b-1)), 0:d-1, 0:d-1, 'UniformOutput', false);
-    if any(arrayfun(@(k) any(any(V-[Uv{k}] > 1e-5)), 1:d))
-        strV = sprintf([repmat('%.3f ', 1, size(V, 2)) '\n'], V);
-        strU = sprintf([repmat('%.3f ', 1, size(U, 2)) '\n'], U);
-        ME = MException('component:noBorrowedAncilla',[strV 'not a borrowed ancilla of ' strU], strV, strU);
-        throw(ME)
-    end
+% |0>-controlled Xdag: Does on target Xdag if control is |0>, else does I.
+function ZCXdag = ZCXdag()
+    global d;
+    ZCXdag = ZCX()^(d-1);
 end
 
-function prod = multAll(list)
-    prod = list{1};
-    for i = 2:numel(list)
-        prod = list{i} * prod;
-    end
+% X_[00,01] level operator, i.e. |0>-controlled X_[0,1] gate. Global phase
+% -1. This is for d = 3 which is unitary.  For d > 3, known constructions
+% have computational basis initialization and deterministic measurement
+% to do X_[0,1], unless that can be done unitarily in the gate set.
+function X00_01 = X00_01()
+    global d I X H;
+    udZCX = reIndex(ZCX(),[2 1]);
+    udZCXdag = reIndex(ZCXdag(),[2 1]);
+    perm_00_10_01 = udZCX * ZCX() * udZCXdag * ZCXdag();
+    udCX = reIndex(CX(),[2 1]);
+    udCXdag = reIndex(CXdag(),[2 1]);
+    X_0_1 = X^2*H2m()*X; % This holds only for d = 3
+    X00_01 = kron(X,X_0_1) * (perm_00_10_01*udCX*perm_00_10_01* ...
+        udCXdag*kron(X^2,I))^((d-1)/2);
+end
+
+function X000_001 = X000_001()
+    global d I X;
+    CX0_1 = (kron(Xdag()^2,I) * X00_01)^((d-1)/2) * kron(Xdag(),I);
+    X000_001 = kron(I,CX0_1) * kron(ZCX(),I) * kron(I,CX0_1) * ...
+        kron(ZCXdag(),I) * reIndex(X00_01(),[1 3 2]);
+end
+
+% The 1-qutrit S gate. Is the \omega_[2] operator applying \omega to |2>.
+function S = S()
+    global X H;
+    S = (kron(X^2,H)*ZCX()*kron(X,H^3*X^2*H^2*X))^2;
+    S = removeBorrowedAncilla(S,2);
+end
+
+% The \omega_[22] level operator which applies phase \omega to |22>.
+% Is the |2>-controlled S gate.
+function w22 = w22()
+    global d II X H;
+    ZZCX = kron(II,X)*(kron(II,X)*X000_001())^(d-1); % |00>-controlled X, i.e. X_[000,001,002]
+    w22 = (kron(kron(X^2,X^2),H)*ZZCX*kron(kron(X,X),H^3*X^2*H^2*X))^2;
+    w22 = removeBorrowedAncilla(w22,3);
 end
