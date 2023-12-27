@@ -46,7 +46,8 @@ if d == 3
     disp(Hdag2());
 end
 
-%% All functions here use only functions above it or in the same folder.
+%% Except for init functions, all functions here are constructions using
+% only the constructions in functions above it or in the same folder as it.
 
 function R1 = init_R1()
     global d;
@@ -114,7 +115,7 @@ end
 function Swapm = Swapm()
     global I;
     udCX = reIndex(CX(), [2 1]); % upside-down CX gate
-    Swapm = kron(I,Hsqm())*CX * kron(Hsqm(),I)*udCX * kron(I,Hsqm())*CX;
+    Swapm = kron(I,Hsqm())*CX() *kron(Hsqm(),I)*udCX* kron(I,Hsqm())*CX();
 end
 
 %% All below here are for d = 3 and do not necessarily hold for d > 3.
