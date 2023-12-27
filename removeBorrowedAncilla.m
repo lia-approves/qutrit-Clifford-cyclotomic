@@ -11,7 +11,7 @@ function V = removeBorrowedAncilla(U,b)
     if any(arrayfun(@(k) any(any(V-[Uv{k}] > 1e-5)), 1:d))
         strV = sprintf([repmat('%.3f ', 1, size(V, 2)) '\n'], V);
         strU = sprintf([repmat('%.3f ', 1, size(U, 2)) '\n'], U);
-        ME = MException('component:noBorrowedAncilla',[strV ['not a' ...
+        ME = MException('component:noBorrowedAncilla',[strV ['not a ' ...
             'borrowed ancilla of '] strU], strV, strU);
         throw(ME)
     end

@@ -1,9 +1,15 @@
 %% Implementation of qutrit Clifford+T gate set level operators
-% In paper: Exact synthesis of multiqutrit Clifford-cyclotomic circuits
-% Level operators: (-1)_[a], \zeta_[a], X_[a,b], H_[a,b,c]
+% From paper: "Exact synthesis of multiqutrit Clifford-cyclotomic circuits"
+
+% Any level operator (-1)_[a], \zeta_[a], X_[a,b], H_[a,b,c] has exact
+% implementation here as a unitary over {H, CX, R2} + 2 borrowed ancilla,
+% up to adding controls and/or conjugation by classical reversible gates
+% ancilla-free in "Constructing All Qutrit Controlled Clifford+T gates in
+% Clifford+T" doi:10.1007/978-3-031-09005-9_3 and "The Qudit ZH-Calculus:
+% Generalised Toffoli+Hadamard and Universality" doi:10.4204/EPTCS.384.9
 
 clear; % clear all variables so only the minimal gate set is in scope
-global d I II H CX R2;
+global d I II H CX R2; % declare the minimal gate set
 
 d = 3;
 I = eye(d);
@@ -12,7 +18,9 @@ H = init_H();
 CX = init_CX();
 R2 = init_R2();
 
-disp(H);
+% Step through each line below to check its truth table (for gates that
+% are a diagonal gate times a d-ary classical reversible gate) or matrix
+disp(H); % The 1-qutrit H_[0,1,2] level operator
 truthU(CX);
 truthU(R2);
 disp(Hdag());
@@ -28,24 +36,28 @@ truthU(P1zdg(0));
 truthU(ZCXutgp());
 truthU(ZCP1dag0());
 
-% The constructions from here on are specific to d = 3.
+% The constructions from here on are specific to d = 3. For |0>-controlled
+% X and controlled H in odd prime qudit Clifford+R2, see "Scaling W state
+% circuits in the qudit Clifford hierarchy" doi:10.1145/3594671.3594687
 if d == 3
-    truthU(mgp());
+    truthU(mgp()); % The (-1) global phase 1-qutrit operator
     truthU(Swap());
-    truthU(X0_1());
+    truthU(X0_1()); % The X_[0,1] 1-qutrit level operator
     truthU(S());
     truthU(Sdag());
     truthU(S8());
     truthU(Sdag1());
-    truthU(zgp());
+    truthU(zgp()); % The \zeta global phase 1-qutrit operator
     truthU(zdaggp());
     truthU(ZCX);
-    truthU(X00_01());
-    truthU(X000_001());
+    truthU(X00_01()); % The X_[00,01] 2-qutrit level operator
+    truthU(X000_001()); % The X_[000,001] 3-qutrit level operator
     truthU(w22());
+    truthU(wdag1_22());
+    truthU(z2()); % The \zeta_[2] 1-qutrit level operator
     disp(Hdag2mwsq());
-    truthU(M2());
-    disp(H2());
+    truthU(m2()); % The (-1)_[2] 1-qutrit level operator
+    disp(H2()); % The H_[20,21,22] 2-qutrit level operator
     disp(Hdag2());
 end
 
@@ -166,7 +178,8 @@ function X0_1 = X0_1(a,b)
     if any(mod(a-b,3) == [1,2])
         X0_1 = mgp() * X()^(a+b)^2 * Hsqm() * X()^(a+b);
     else
-        ME = MException('component:invalidAB',sprintf('Invalid a=%d, b=%d',a,b));
+        ME = MException('component:invalidAB', ...
+            sprintf('Invalid a=%d, b=%d',a,b));
         throw(ME)
     end
 end
@@ -186,13 +199,13 @@ end
 % zeta^8 * S; so the dagger of this is zeta S^\dagger
 function S8 = S8()
     global H CX R2;
-    S8 = H^8 * R2 * X()^2 * H^2 * X() * H^2 * X() * R2^8 * X();
+    S8 = R2 * X()^2 * Hdag()^2 * X() * H^2 * X() * R2^8 * X();
 end
 
 % zeta S^\dagger
 function Sdag1 = Sdag1()
     global H CX R2;
-    Sdag1 = X()^2 * R2 * X()^2 * H^2 * X()^2 * H^2 * X * R2^8 * H^8;
+    Sdag1 = X()^2 * R2 * X()^2 * Hdag()^2 * X()^2 * H^2 * X() * R2^8;
 end
 
 % global phase of \zeta = \omega_2 1-qutrit gate
@@ -226,7 +239,7 @@ end
 % which is unitary.  For d > 3, known constructions have computational
 % basis initialization and deterministic measurement due to X_[0,1].
 function X00_01 = X00_01()
-    global d I H CX;
+    global d I CX;
     udZCX = reIndex(ZCX(),[2 1]); % upside-down ZCX gate
     udZCXdag = reIndex(ZCXdag(),[2 1]);
     perm00_10_01 = udZCX * ZCX() * udZCXdag * ZCXdag();
@@ -253,6 +266,19 @@ function w22 = w22()
     w22 = removeBorrowedAncilla(w22,3);
 end
 
+% The \omegadag_[22] level operator up to a global phase of \zeta.
+% Is the |2>-controlled \zeta Sdag gate.
+function wdag1_22 = wdag1_22()
+    global I H R2;
+    wdag1_22 = ZCX(2)^2 * kron(I,R2*X()^2*Hdag()^2) * ZCX(2)^2 * ...
+        kron(I,H^2*X()*R2^8);
+end
+
+% The \zeta_[2] level operator
+function z2 = z2()
+    z2 = removeBorrowedAncilla(wdag1_22()*w22(),2);
+end
+
 % The Hdag_[20,21,22] level operator up to controlled global phase -w^2
 function Hdag2mwsq = Hdag2mwsq()
     global I H;
@@ -261,9 +287,9 @@ function Hdag2mwsq = Hdag2mwsq()
 end
 
 % The (-1)_[2] level operator
-function M2 = M2()
-    M2 = kron(Xdag(),X())*X00_01()*kron(X(),Xdag()) * Hdag2mwsq()^2;
-    M2 = removeBorrowedAncilla(M2,2);
+function m2 = m2()
+    m2 = kron(Xdag(),X())*X00_01()*kron(X(),Xdag()) * Hdag2mwsq()^2;
+    m2 = removeBorrowedAncilla(m2,2);
 end
 
 % The H_[20,21,22] 2-qutrit level operator
@@ -271,11 +297,11 @@ function H2 = H2()
     global I H;
     Zww = w22()^2 * kron(I,Hdag()^2) * w22()^2 * kron(I,Hdag()^2);
     H2mw = Zww * kron(I,Hdag()) * Zww * kron(I,H) * Zww;
-    H2 = H2mw * kron(M2() * S()^2, I);
+    H2 = H2mw * kron(m2() * S()^2, I);
 end
 
 % The Hdag_[20,21,22] 2-qutrit level operator
 function Hdag2 = Hdag2()
     global I;
-    Hdag2 = Hdag2mwsq() * kron(M2() * S(), I);
+    Hdag2 = Hdag2mwsq() * kron(m2() * S(), I);
 end

@@ -1,8 +1,12 @@
 %% Implementation of qutrit Toffoli+Hadamard gate set level operators
-% In paper: Exact synthesis of multiqutrit Clifford-cyclotomic circuits
-% For each level operator (-1)_[a], \omega_[a], X_[a,b], H_[a,b,c]: Add
-% controls or conjugate by classical reversible gates constructions here
-% for exact implementation on any number of qutrits + 2 borrowed ancilla
+% From paper: "Exact synthesis of multiqutrit Clifford-cyclotomic circuits"
+
+% Any level operator (-1)_[a], \omega_[a], X_[a,b], H_[a,b,c] has exact
+% implementation here as a unitary over {R1, H, CCX} + 2 borrowed ancilla,
+% up to adding controls and/or conjugation by classical reversible gates
+% ancilla-free in "Constructing All Qutrit Controlled Clifford+T gates in
+% Clifford+T" doi:10.1007/978-3-031-09005-9_3 and "The Qudit ZH-Calculus:
+% Generalised Toffoli+Hadamard and Universality" doi:10.4204/EPTCS.384.9
 
 clear; % clear all variables so only the minimal gate set is in scope
 global d I II R1 H CCX; % declare the minimal gate set
@@ -17,13 +21,13 @@ CCX = init_CCX();
 % Step through each line below to check its truth table (for gates that
 % are a diagonal gate times a d-ary classical reversible gate) or matrix
 truthU(R1);
-disp(H);
+disp(H); % The 1-qutrit H_[0,1,2] level operator
 truthU(CCX);
 disp(Hdag());
 truthU(X());
 truthU(Xdag());
 truthU(Hsqm());
-truthU(wgp());
+truthU(wgp()); % The \omega global phase 1-qutrit operator
 truthU(CX());
 truthU(CXdag());
 truthU(Swapm());
@@ -33,16 +37,16 @@ truthU(Swapm());
 if d == 3
     truthU(ZCX());
     truthU(ZCXdag());
-    truthU(S());
-    truthU(mgp());
+    truthU(S()); % The 1-qutrit \omega_[2] level operator
+    truthU(mgp()); % The (-1) global phase 1-qutrit operator
     truthU(Swap());
-    truthU(X0_1());
-    truthU(X00_01());
-    truthU(X000_001());
-    truthU(w22());
+    truthU(X0_1()); % The X_[0,1] 1-qutrit level operator
+    truthU(X00_01()); % The X_[00,01] 2-qutrit level operator
+    truthU(X000_001()); % The X_[000,001] 3-qutrit level operator
+    truthU(w22()); % The 2-qutrit \omega_[22] level operator
     disp(Hdag2mwsq());
-    truthU(M2());
-    disp(H2());
+    truthU(m2()); % The 1-qutrit (-1)_[2] level operator
+    disp(H2()); % The 2-qutrit H_[20,21,22] level operator
     disp(Hdag2());
 end
 
@@ -198,9 +202,9 @@ function Hdag2mwsq = Hdag2mwsq()
 end
 
 % The (-1)_[2] level operator
-function M2 = M2()
-    M2 = kron(Xdag(),X())*X00_01()*kron(X(),Xdag()) * Hdag2mwsq()^2;
-    M2 = removeBorrowedAncilla(M2,2);
+function m2 = m2()
+    m2 = kron(Xdag(),X())*X00_01()*kron(X(),Xdag()) * Hdag2mwsq()^2;
+    m2 = removeBorrowedAncilla(m2,2);
 end
 
 % The H_[20,21,22] 2-qutrit level operator
@@ -208,11 +212,11 @@ function H2 = H2()
     global I H;
     Zww = w22()^2 * kron(I,Hdag()^2) * w22()^2 * kron(I,Hdag()^2);
     H2mw = Zww * kron(I,Hdag()) * Zww * kron(I,H) * Zww;
-    H2 = H2mw * kron(M2() * S()^2, I);
+    H2 = H2mw * kron(m2() * S()^2, I);
 end
 
 % The Hdag_[20,21,22] 2-qutrit level operator
 function Hdag2 = Hdag2()
     global I;
-    Hdag2 = Hdag2mwsq() * kron(M2() * S(), I);
+    Hdag2 = Hdag2mwsq() * kron(m2() * S(), I);
 end
