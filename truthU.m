@@ -1,5 +1,6 @@
-%%% Prints out truth table of a unitary U.
-function [outstrs, vals, numChanged] = testU(u, emu, showIds, showZeroes)
+%%% Prints out truth table of a unitary U where U is a diagonal gate
+%%% multiplied by a d-ary classical reversible gate.
+function [outstrs, vals, numChanged] = truthU(u, emu, showIds, showZeroes)
     global d;
     numChanged = 0;
     if nargin < 3
@@ -13,7 +14,7 @@ function [outstrs, vals, numChanged] = testU(u, emu, showIds, showZeroes)
     if nargin < 2
         emu = false;
     end
-    fu = find(abs(u) > 1e-10);
+    fu = find(abs(u) > 1e-8);
     u = u/abs(u(fu(1)));
     I = eye(d);
     ks = cellfun(@(x) I(:,x),num2cell([1:d]),'UniformOutput',false);
@@ -29,7 +30,7 @@ function [outstrs, vals, numChanged] = testU(u, emu, showIds, showZeroes)
         uk = u * tensall(ditvecs);
         outstrs{i+1} = dec2base(find(round(abs(uk))>1e-10)-1,d,n);
         vals(i+1) = uk(find(round(abs(uk))));
-        if (vals(i+1)~=0 || showZeroes) && (find(round(abs(uk)))-1 ~= i || abs(vals(i+1)-1) > 1e-10 || showIds)
+        if (vals(i+1)~=0 || showZeroes) && (find(round(abs(uk)))-1 ~= i || abs(vals(i+1)-1) > 1e-8 || showIds)
             disp([dits ' --> ' outstrs{i+1} dispcomplex(vals(i+1))]);
             if vals(i+1)~=0 || find(round(abs(uk)))-1 ~= i || abs(vals(i+1)-1) > 1e-10
                 numChanged = numChanged + 1;
