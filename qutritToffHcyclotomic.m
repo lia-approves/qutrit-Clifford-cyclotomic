@@ -1,8 +1,8 @@
-%% Implementation of qutrit controlled Clifford+T gates
-% For the paper Exact synthesis of multiqutrit Clifford-cyclotomic circuits
-% An earlier implementation, with fewer gates and where some of the qutrit
-% Clifford gates differ in definition by a global phase, is at https://git
-% hub.com/lia-approves/qudit-circuits/tree/main/qutrit_control_Clifford_T
+%% Implementation of qutrit Toffoli+Hadamard gate set level operators
+% In paper: Exact synthesis of multiqutrit Clifford-cyclotomic circuits
+% For each level operator (-1)_[a], \omega_[a], X_[a,b], H_[a,b,c]: Add
+% controls or conjugate by classical reversible gates these constructions
+% for exact implementation on any number of qutrits with 2 borrowed ancilla
 
 clear; % clear all variables so only the minimal gate set is in scope
 global d I II X H CCX; % declare the minimal gate set
@@ -14,14 +14,15 @@ X = init_X();
 H = init_H();
 CCX = init_CCX();
 
-% Step through each line below to check its truth table (for any gate that
-% is a diagonal gate times a d-ary classical reversible gate) or matrix.
+% Step through each line below to check its truth table (for gates that
+% are a diagonal gate times a d-ary classical reversible gate) or matrix
 truthU(X);
 disp(H);
 truthU(CCX);
 truthU(Xdag());
 disp(Hdag());
 truthU(Hsqm());
+truthU(wgp());
 truthU(CX());
 truthU(CXdag());
 truthU(Swapm());
@@ -32,8 +33,9 @@ if d == 3
     truthU(ZCX());
     truthU(ZCXdag());
     truthU(S());
-    truthU(Mgp());
+    truthU(mgp());
     truthU(Swap());
+    truthU(X0_1());
     truthU(X00_01());
     truthU(X000_001());
     truthU(w22());
@@ -72,7 +74,7 @@ function Xdag = Xdag()
     Xdag = X^(d-1);
 end
 
-% H^\dag with exact global phase. Is H^3 up to a global phase.
+% Hdag with exact global phase. Is H^3 up to a global phase.
 function Hdag = Hdag()
     global d H;
     Hdag = H^(4*d-1);
@@ -82,6 +84,12 @@ end
 function Hsqm = Hsqm()
     global d H;
     Hsqm = H^(2*d);
+end
+
+function wgp = wgp()
+    global d H;
+    [~,C,~] = gcd(8,d);
+    wgp = H^(4*mod(C,d));
 end
 
 function CX = CX()
@@ -104,16 +112,16 @@ end
 
 %% All below here are for d = 3 and do not necessarily hold for d > 3.
 
-% |0>-controlled X gate: Does on target X if control is |0>, else does I.
+% |0>-controlled X gate: Does to target X if control is |0>, else does I
 function ZCX = ZCX()
     global d I X H CCX;
-    nZCX = kron(kron(I,Hdag()^2),I) * CCX * kron(kron(I,H^2),I) * kron( ...
-        CXdag(),I) * CCX * kron(CX(),I); % |not 0>-controlled X for d = 3
+    nZCX = kron(kron(I,Hdag()^2),I) * CCX * kron(kron(I,H^2),I) * ...
+        kron(CXdag(),I) * CCX * kron(CX(),I); % |not 0>-controlled X
     nZCX = removeBorrowedAncilla(nZCX,2);
     ZCX = kron(I,X) * nZCX^(d-1);
 end
 
-% |0>-controlled Xdag: Does on target Xdag if control is |0>, else does I
+% |0>-controlled Xdag: Does to target Xdag if control is |0>, else I
 function ZCXdag = ZCXdag()
     global d;
     ZCXdag = ZCX()^(d-1);
@@ -127,15 +135,20 @@ function S = S()
 end
 
 % -1 global phase 1-qutrit gate
-function Mgp = Mgp()
+function mgp = mgp()
     global d H;
-    Mgp = (S()*H)^(d^2);
+    mgp = (S()*H)^(d^2);
 end
 
 % Swap 2-qutrit gate
 function Swap = Swap()
     global I;
-    Swap = Swapm() * kron(Mgp(),I);
+    Swap = Swapm() * kron(mgp(),I);
+end
+
+% X_[0,1] level operator which is a 1-qutrit gate, for d = 3.
+function X0_1 = X0_1()
+    X0_1 = X^2*Hsqm()*X;
 end
 
 % X_[00,01] level operator, i.e. |0>-controlled X_[0,1] gate, for d = 3
@@ -148,8 +161,7 @@ function X00_01 = X00_01()
     perm00_10_01 = udZCX * ZCX() * udZCXdag * ZCXdag();
     udCX = reIndex(CX(),[2 1]);
     udCXdag = reIndex(CXdag(),[2 1]);
-    X0_1 = X^2*Hsqm()*X; % This holds only for d = 3
-    X00_01 = kron(Mgp()*X,X0_1) * (perm00_10_01*udCX*perm00_10_01* ...
+    X00_01 = kron(mgp()*X,X0_1()) * (perm00_10_01*udCX*perm00_10_01* ...
         udCXdag*kron(X^2,I))^((d-1)/2);
 end
 
@@ -169,11 +181,11 @@ function w22 = w22()
     w22 = removeBorrowedAncilla(w22,3);
 end
 
-% The H^\dag_[20,21,22] level operator up to controlled global phase -w^2
+% The Hdag_[20,21,22] level operator up to controlled global phase -w^2
 function Hdag2mwsq = Hdag2mwsq()
     global I H;
     Zwsqwsq = kron(I,H^2) * w22() * kron(I,H^2) * w22();
-    Hdag2mwsq = Zwsqwsq * kron(I,Hdag()) * Zwsqwsq * kron(I,H) * Zwsqwsq;
+    Hdag2mwsq = Zwsqwsq * kron(I,Hdag())*Zwsqwsq*kron(I,H) * Zwsqwsq;
 end
 
 % The (-1)_[2] level operator
@@ -191,7 +203,7 @@ function H2 = H2()
     H2 = H2mw * kron(M2() * S()^2, I);
 end
 
-% The H^\dag_[20,21,22] 2-qutrit level operator
+% The Hdag_[20,21,22] 2-qutrit level operator
 function Hdag2 = Hdag2()
     global I;
     Hdag2 = Hdag2mwsq() * kron(M2() * S(), I);
