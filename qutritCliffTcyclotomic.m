@@ -55,7 +55,8 @@ if d == 3
     truthU(w22());
     truthU(wdag1_22());
     truthU(z2()); % The \zeta_[2] 1-qutrit level operator
-    disp(Hdag2mwsq());
+    disp(H2m());
+    disp(Hdag2m());
     truthU(m2()); % The (-1)_[2] 1-qutrit level operator
     disp(H2()); % The H_[20,21,22] 2-qutrit level operator
     disp(Hdag2());
@@ -191,14 +192,14 @@ function S = S()
 end
 
 function Sdag = Sdag()
-    global I H CX R2;
+    global I R2;
     Sdag = ( kron(Xdag(),I) * (kron(I,R2)*CXdag())^3 * kron(X(),I) * kron(I,Xdag()*Hdag()^2*X()) )^2;
     Sdag = removeBorrowedAncilla(Sdag,2);
 end
 
 % zeta^8 * S; so the dagger of this is zeta S^\dagger
 function S8 = S8()
-    global H CX R2;
+    global H R2;
     S8 = R2 * X()^2 * Hdag()^2 * X() * H^2 * X() * R2^8 * X();
 end
 
@@ -279,29 +280,37 @@ function z2 = z2()
     z2 = removeBorrowedAncilla(wdag1_22()*w22(),2);
 end
 
-% The Hdag_[20,21,22] level operator up to controlled global phase -w^2
-function Hdag2mwsq = Hdag2mwsq()
+% The H_[20,21,22] level operator up to controlled global phase -1
+function H2m = H2m()
     global I H;
-    Zwsqwsq = kron(I,H^2) * w22() * kron(I,H^2) * w22();
-    Hdag2mwsq = Zwsqwsq * kron(I,Hdag())*Zwsqwsq*kron(I,H) * Zwsqwsq;
+    X0_2 = X()*Hsqm()*X()^2;
+    S2_2perm=kron(I,X0_2)*wdag1_22()^2*kron(I,X0_2);
+    H2m = S2_2perm*kron(I,Hdag())*S2_2perm*kron(I,H)*S2_2perm;
+end
+
+function Hdag2m = Hdag2m()
+    global I H;
+    X0_2 = X()*Hsqm()*X()^2;
+    Sdag1_2perm=kron(I,X0_2)*wdag1_22()*kron(I,X0_2);
+    Hdag2m = Sdag1_2perm*kron(I,Hdag())*Sdag1_2perm*kron(I,H)*Sdag1_2perm;
 end
 
 % The (-1)_[2] level operator
 function m2 = m2()
-    m2 = kron(Xdag(),X())*X00_01()*kron(X(),Xdag()) * Hdag2mwsq()^2;
+    global I;
+    X21_22 = kron(Xdag(),X())*X00_01()*kron(X(),Xdag());
+    m2 = H2m()^2 * X21_22 * kron(Sdag(),I);
     m2 = removeBorrowedAncilla(m2,2);
 end
 
 % The H_[20,21,22] 2-qutrit level operator
 function H2 = H2()
-    global I H;
-    Zww = w22()^2 * kron(I,Hdag()^2) * w22()^2 * kron(I,Hdag()^2);
-    H2mw = Zww * kron(I,Hdag()) * Zww * kron(I,H) * Zww;
-    H2 = H2mw * kron(m2() * S()^2, I);
+    global I;
+    H2 = H2m() * kron(m2(),I);
 end
 
 % The Hdag_[20,21,22] 2-qutrit level operator
 function Hdag2 = Hdag2()
     global I;
-    Hdag2 = Hdag2mwsq() * kron(m2() * S(), I);
+    Hdag2 = Hdag2m() * kron(m2(),I);
 end
