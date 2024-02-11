@@ -156,6 +156,14 @@ function ZCP1dag0 = ZCP1dag0()
     end
 end
 
+function ZCX = ZCX(ctrl)
+    global I H CX R2;
+    if nargin < 1
+        ctrl = 0;
+    end
+    ZCX = kron(X()^ctrl,I) * ZCXutgp()*kron(zdaggp()^2,I) * kron(Xdag()^ctrl,I);
+end
+
 %% All below here are for d = 3 and do not necessarily hold for d > 3.
 
 function mgp = mgp()
@@ -205,7 +213,7 @@ end
 
 % zeta S^\dagger
 function Sdag1 = Sdag1()
-    global H CX R2;
+    global H R2;
     Sdag1 = X()^2 * R2 * X()^2 * Hdag()^2 * X()^2 * H^2 * X() * R2^8;
 end
 
@@ -220,20 +228,20 @@ function zdaggp = zdaggp()
 end
 
 % X gate controlled on just one basis state
-function ZCX = ZCX(ctrl)
-    global I;
+function ZCX3 = ZCX3(ctrl)
+    global I H CX R2;
     if nargin < 1
         ctrl = 0;
     end
-    ZCX = kron(X()^ctrl,I) * ZCXutgp()*kron(zdaggp()^2,I) * kron(Xdag()^ctrl,I);
+    ZCX3 = kron(X()^ctrl *X*S()*X^2,H^3)*(kron(I,R2)*CX)^3*kron(Xdag()^ctrl,H);
 end
 
-function ZCXdag = ZCXdag(ctrl)
+function ZCXdag3 = ZCXdag3(ctrl)
     global d;
     if nargin < 1
         ctrl = 0;
     end
-    ZCXdag = ZCX(ctrl)^(d-1);
+    ZCXdag3 = ZCX3(ctrl)^(d-1);
 end
 
 % X_[00,01] level operator, i.e. |0>-controlled X_[0,1] gate, for d = 3
@@ -241,9 +249,9 @@ end
 % basis initialization and deterministic measurement due to X_[0,1].
 function X00_01 = X00_01()
     global d I CX;
-    udZCX = reIndex(ZCX(),[2 1]); % upside-down ZCX gate
-    udZCXdag = reIndex(ZCXdag(),[2 1]);
-    perm00_10_01 = udZCX * ZCX() * udZCXdag * ZCXdag();
+    udZCX = reIndex(ZCX3(),[2 1]); % upside-down ZCX gate
+    udZCXdag = reIndex(ZCXdag3(),[2 1]);
+    perm00_10_01 = udZCX * ZCX3() * udZCXdag * ZCXdag3();
     udCX = reIndex(CX,[2 1]);
     udCXdag = reIndex(CXdag(),[2 1]);
     X00_01 = kron(X(),X0_1()) * (perm00_10_01 * udCX * ...
@@ -253,8 +261,8 @@ end
 function X000_001 = X000_001()
     global d I;
     CX0_1 = (kron(Xdag()^2,I) * X00_01)^((d-1)/2) * kron(Xdag(),I);
-    X000_001 = kron(I,CX0_1) * kron(ZCX(),I) * kron(I,CX0_1) * ...
-        kron(ZCXdag(),I) * reIndex(X00_01(),[1 3 2]);
+    X000_001 = kron(I,CX0_1) * kron(ZCX3(),I) * kron(I,CX0_1) * ...
+        kron(ZCXdag3(),I) * reIndex(X00_01(),[1 3 2]);
 end
 
 % The \omega_[22] level operator which applies phase \omega to |22>.
